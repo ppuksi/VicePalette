@@ -1,0 +1,111 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="VicePalette - AI Magic">
+  <main class="wrap">
+    <p class="eyebrow">// signal acquired</p>
+    <h1>VicePalette</h1>
+    <p class="tagline">Boom Boom, Fun Times with AI</p>
+
+    <canvas id="signal" class="signal" aria-hidden="true"></canvas>
+
+    <p class="bio">
+      Minimax H3 - Krea2. Dm me if you have ideas or commissions in your mind.
+	  This is just a rough landing page. I'll be cooking longer videos in the future.
+    </p>
+
+    <div class="stack">
+      <span class="key">stack:</span>
+      <span class="tag">comfyui</span>
+      <span class="tag">Minimax H3</span>
+      <span class="tag">krea2</span>
+    </div>
+
+    <nav class="links">
+      <a href="https://civitai.red/user/VicePalette">CivitAI</a>
+	  <a href="https://www.fanvue.com/lucy-vicepalette">Fanvue</a>
+	  <a href="https://x.com/VicePalette">X</a>
+      <a href="mailto:Japadapaduu@proton.me">email</a>
+    </nav>
+
+    <footer>built with astro · deployed on github pages</footer>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('signal');
+
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      const styles = getComputedStyle(document.documentElement);
+      const colorMuted = styles.getPropertyValue('--border').trim();
+      const colorAccent = styles.getPropertyValue('--accent').trim();
+
+      function resize() {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      const points = 140;
+      const target = Array.from({ length: points }, (_, i) => {
+        const x = i / points;
+        return Math.sin(x * Math.PI * 3.2) * 0.55 + Math.sin(x * Math.PI * 8.5) * 0.15;
+      });
+      const noise = Array.from({ length: points }, () => Math.random() * 2 - 1);
+
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      function parseColor(hex) {
+        const h = hex.replace('#', '');
+        return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+      }
+
+      function lerpColor(a, b, t) {
+        const pa = parseColor(a);
+        const pb = parseColor(b);
+        const r = Math.round(pa[0] + (pb[0] - pa[0]) * t);
+        const g = Math.round(pa[1] + (pb[1] - pa[1]) * t);
+        const bl = Math.round(pa[2] + (pb[2] - pa[2]) * t);
+        return `rgb(${r}, ${g}, ${bl})`;
+      }
+
+      function draw(t) {
+        const rect = canvas.getBoundingClientRect();
+        const w = rect.width;
+        const h = rect.height;
+        ctx.clearRect(0, 0, w, h);
+        ctx.beginPath();
+        for (let i = 0; i < points; i++) {
+          const val = noise[i] * (1 - t) + target[i] * t;
+          const x = (i / (points - 1)) * w;
+          const y = h / 2 - val * (h * 0.42);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = lerpColor(colorMuted, colorAccent, t);
+        ctx.lineWidth = 1.75;
+        ctx.stroke();
+      }
+
+      if (reduced) {
+        draw(1);
+      } else {
+        const duration = 2400;
+        const start = performance.now();
+        function frame(now) {
+          const elapsed = now - start;
+          const t = Math.min(1, elapsed / duration);
+          const eased = 1 - Math.pow(1 - t, 3);
+          draw(eased);
+          if (t < 1) requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+      }
+    }
+  </script>
+</Layout>
