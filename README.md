@@ -1,4 +1,4 @@
-# pasi-site
+# VicePalette
 
 Minimal Astro landing page, built for GitHub Pages.
 
