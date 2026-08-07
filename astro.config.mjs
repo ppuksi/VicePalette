@@ -4,6 +4,6 @@ import { defineConfig } from 'astro/config';
 // - site: https://<your-github-username>.github.io
 // - base: /<repo-name>  (omit entirely if the repo is named <your-username>.github.io)
 export default defineConfig({
-  site: 'https://ppuksi.github.io/VicePalette/',
-  base: '/VicePalette',
+	site: 'https://vicepalette.dev',
+	base: '/',
 });
