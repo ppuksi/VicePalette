@@ -6,7 +6,7 @@ import Layout from '../layouts/Layout.astro';
   <main class="wrap">
     <p class="eyebrow">// signal acquired</p>
     <h1>VicePalette</h1>
-    <p class="tagline">Boom Boom, Fun Times with AI</p>
+    <p class="tagline">Boom Boom. Fun Times with AI.</p>
 
     <canvas id="signal" class="signal" aria-hidden="true"></canvas>
 
@@ -23,13 +23,14 @@ import Layout from '../layouts/Layout.astro';
     </div>
 
     <nav class="links">
+	  <a href={`${import.meta.env.BASE_URL}gallery/`}>Gallery</a>
       <a href="https://civitai.red/user/VicePalette">CivitAI</a>
 	  <a href="https://www.fanvue.com/lucy-vicepalette">Fanvue</a>
 	  <a href="https://x.com/VicePalette">X</a>
       <a href="mailto:Japadapaduu@proton.me">email</a>
     </nav>
 
-    <footer>built with astro · deployed on github pages</footer>
+    <footer>Built with astro. Omnomnomnom.</footer>
   </main>
 
   <script>
