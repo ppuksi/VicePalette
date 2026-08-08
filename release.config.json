@@ -1,4 +1,5 @@
 {
   "bucket": "vicepalette",
-  "baseUrl": "https://api003.backblazeb2.com/file/vicepalette"
+  "baseUrl": "https://api003.backblazeb2.com/file/vicepalette",
+  "titleFromPrompt": false
 }

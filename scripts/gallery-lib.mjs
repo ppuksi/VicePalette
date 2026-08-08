@@ -166,6 +166,49 @@ export function makeThumb(sourcePath, thumbPath) {
   return res.status === 0 && fs.existsSync(thumbPath);
 }
 
+// Ask an LLM (OpenAI-compatible chat API) for a short gallery title for a
+// prompt. Returns null on any failure (missing key, network, bad response) —
+// callers fall back to filename-derived titles.
+//
+// Env:
+//   LLM_API_KEY    API key (required)
+//   LLM_MODEL      default "deepseek-chat"
+//   LLM_BASE_URL   default "https://api.deepseek.com" (OpenAI-compatible)
+//   LLM_API_BASE   test override for the base URL (takes precedence)
+export async function llmTitleFromPrompt(prompt) {
+  const key = process.env.LLM_API_KEY;
+  if (!key) return null;
+  const base = process.env.LLM_API_BASE || process.env.LLM_BASE_URL || 'https://api.deepseek.com';
+  const model = process.env.LLM_MODEL || 'deepseek-chat';
+  try {
+    const res = await fetch(`${base}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a curator naming AI-generated images for an art gallery. ' +
+              'Reply with ONLY a short evocative title, max 6 words, no quotes, no trailing punctuation.',
+          },
+          { role: 'user', content: String(prompt).slice(0, 2000) },
+        ],
+        temperature: 0.7,
+        max_tokens: 24,
+      }),
+    });
+    if (!res.ok) return null;
+    const j = await res.json();
+    const t = j.choices?.[0]?.message?.content?.trim();
+    if (!t) return null;
+    return t.replace(/^["']+|["']+$/g, '').replace(/\s+/g, ' ').trim();
+  } catch {
+    return null;
+  }
+}
+
 // ---- release config -------------------------------------------------------
 
 export function loadReleaseConfig(root) {
@@ -214,6 +257,7 @@ export async function releaseEntry({
   posterFile = null, // pre-existing poster image to use (copied/uploaded)
   baseUrl = null,
   bucket = null,
+  titleFromPrompt = false, // ask the LLM for a title when no explicit title given
 }) {
   const mediaPath = path.resolve(mediaFile);
   if (!fs.existsSync(mediaPath)) throw new Error(`File not found: ${mediaFile}`);
@@ -221,7 +265,23 @@ export async function releaseEntry({
   if (!mediaType) throw new Error(`Unsupported media type: ${path.basename(mediaPath)}`);
 
   const remote = Boolean(baseUrl);
-  const finalTitle = title || titleFromFilename(path.basename(mediaPath));
+
+  // Generation data (read from the source file — prompt/parameters chunks
+  // survive sanitization unchanged; only "workflow" is stripped later).
+  let genPrompt = null;
+  let genParams = null;
+  if (mediaType === 'image') {
+    const gen = extractGenerationData(mediaPath);
+    genPrompt = gen.prompt;
+    genParams = Object.keys(gen.params).length ? gen.params : null;
+  }
+  const finalDescription = (description || genPrompt || '').trim();
+
+  // Title priority: explicit title > LLM title from prompt > filename.
+  let finalTitle =
+    title ||
+    (titleFromPrompt && genPrompt ? await llmTitleFromPrompt(genPrompt) : null) ||
+    titleFromFilename(path.basename(mediaPath));
   const slug = uniqueSlug(root, slugify(finalTitle));
 
   // Stage dir: committed (public/) in local mode, gitignored (.local-media/) in remote mode.
@@ -242,16 +302,6 @@ export async function releaseEntry({
     const res = sanitizePng(destFile, destFile, { strip: ['workflow'] });
     sanitized = res.dropped;
   }
-
-  // Generation data: prompt becomes the description, settings become params.
-  let genPrompt = null;
-  let genParams = null;
-  if (mediaType === 'image') {
-    const gen = extractGenerationData(destFile);
-    genPrompt = gen.prompt;
-    genParams = Object.keys(gen.params).length ? gen.params : null;
-  }
-  const finalDescription = (description || genPrompt || '').trim();
 
   // Grid thumbnail (images only; videos already get a poster).
   let thumb = null;

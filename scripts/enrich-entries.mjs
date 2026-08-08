@@ -20,12 +20,14 @@ import {
   loadDotEnvLocal,
   extractGenerationData,
   makeThumb,
+  llmTitleFromPrompt,
   yamlStr,
 } from './gallery-lib.mjs';
 
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
 const commit = args.includes('--commit');
+const doTitles = args.includes('--titles'); // also regenerate titles from prompts via LLM
 function arg(name, def = null) {
   const i = args.indexOf(name);
   return i === -1 ? def : args[i + 1];
@@ -81,6 +83,21 @@ for (const mdFile of entries) {
   const slug = mdFile.replace(/\.md$/, '');
   const gen = extractGenerationData(localSource);
   const changed = [];
+
+  // 0) title from prompt via LLM (only with --titles)
+  if (doTitles && gen.prompt) {
+    const llmTitle = await llmTitleFromPrompt(gen.prompt);
+    if (llmTitle) {
+      const titleIdx = lines.findIndex((l) => /^\s*title:\s*"/.test(l));
+      if (titleIdx !== -1) {
+        const current = (lines[titleIdx].match(/"([^"]*)"/) || [])[1] || '';
+        if (current !== llmTitle) {
+          if (!dryRun) lines[titleIdx] = `title: "${yamlStr(llmTitle)}"`;
+          changed.push('title');
+        }
+      }
+    }
+  }
 
   // 1) description = prompt (only if currently empty)
   const descIdx = lines.findIndex((l) => /^\s*description:\s*"/.test(l));

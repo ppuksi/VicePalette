@@ -7,6 +7,13 @@ const entries = (await getCollection('gallery')).sort(
 );
 
 const pipelines = [...new Set(entries.map((e) => e.data.pipeline))].sort();
+
+const monthKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+const months = [...new Set(entries.map((e) => monthKey(e.data.date)))].sort().reverse();
+const monthLabel = (m) => {
+  const [y, mo] = m.split('-').map(Number);
+  return new Date(y, mo - 1, 1).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+};
 const base = import.meta.env.BASE_URL;
 ---
 
@@ -17,13 +24,18 @@ const base = import.meta.env.BASE_URL;
     <p class="tagline">Output from the local stack, filterable by pipeline.</p>
 
     <div class="filters" role="group" aria-label="Filter by pipeline">
-      <button class="filter-btn is-active" data-filter="all">all</button>
-      {pipelines.map((p) => <button class="filter-btn" data-filter={p}>{p}</button>)}
+      <button class="filter-btn is-active" data-filter="all" data-dim="pipeline">all</button>
+      {pipelines.map((p) => <button class="filter-btn" data-filter={p} data-dim="pipeline">{p}</button>)}
+    </div>
+
+    <div class="filters" role="group" aria-label="Filter by month">
+      <button class="filter-btn is-active" data-filter="all" data-dim="month">all time</button>
+      {months.map((m) => <button class="filter-btn" data-filter={m} data-dim="month">{monthLabel(m)}</button>)}
     </div>
 
     <div class="grid" id="gallery-grid">
       {entries.map((entry) => (
-        <a class="card" href={`${base}gallery/${entry.id}/`} data-pipeline={entry.data.pipeline}>
+        <a class="card" href={`${base}gallery/${entry.id}/`} data-pipeline={entry.data.pipeline} data-month={monthKey(entry.data.date)}>
           {entry.data.mediaType === 'video' ? (
             <video src={entry.data.src} poster={entry.data.poster} muted loop playsinline preload="metadata" />
           ) : (
@@ -41,15 +53,19 @@ const base = import.meta.env.BASE_URL;
   </main>
 
   <script>
-    const buttons = document.querySelectorAll('.filter-btn');
-    const cards = document.querySelectorAll('.card');
-    buttons.forEach((btn) => {
+    // Two independent filter dimensions (pipeline + month), combined with AND.
+    const state = { pipeline: 'all', month: 'all' };
+    document.querySelectorAll('.filter-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        buttons.forEach((b) => b.classList.remove('is-active'));
-        btn.classList.add('is-active');
-        const filter = btn.getAttribute('data-filter');
-        cards.forEach((card) => {
-          const match = filter === 'all' || card.getAttribute('data-pipeline') === filter;
+        const dim = btn.getAttribute('data-dim') || 'pipeline';
+        state[dim] = btn.getAttribute('data-filter');
+        document.querySelectorAll(`.filter-btn[data-dim="${dim}"]`).forEach((b) =>
+          b.classList.toggle('is-active', b === btn)
+        );
+        document.querySelectorAll('.card').forEach((card) => {
+          const match =
+            (state.pipeline === 'all' || card.dataset.pipeline === state.pipeline) &&
+            (state.month === 'all' || card.dataset.month === state.month);
           card.style.display = match ? '' : 'none';
         });
       });

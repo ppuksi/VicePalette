@@ -122,6 +122,22 @@ Note: if you run `strip_workflow.bat` on source files *before* releasing them,
 the prompt data is removed at the source, so it won't be in the gallery copy
 either — only run it on files you don't need generation data from.
 
+## LLM titles (optional)
+
+With `"titleFromPrompt": true` in `release.config.json`, entries without a
+`.title.txt` get a short title generated from the image's own prompt via an
+OpenAI-compatible chat API. Title priority: `title.txt` > LLM-from-prompt >
+filename.
+
+- Add an `LLM_API_KEY` secret (Settings → Secrets and variables → Actions) for
+  the cloud worker, and/or `LLM_API_KEY=...` in `.env.local` for local runs.
+- Env: `LLM_MODEL` (default `deepseek-chat`), `LLM_BASE_URL` (default
+  `https://api.deepseek.com`). Any OpenAI-compatible endpoint works.
+- The call is cheap (~200 tokens/image) and fails safe: no key / error → falls
+  back to filename-derived titles.
+- Backfill titles for existing entries (once the key is set):
+  `node scripts/enrich-entries.mjs --src-dir <folder> --titles --commit`
+
 ## Troubleshooting
 
 - Check **Actions** tab: failed runs say why (e.g. schema validation).

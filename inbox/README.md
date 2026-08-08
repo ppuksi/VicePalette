@@ -36,8 +36,9 @@ inbox/2026-08-08-neon-shoot/
   rooftop.png.title.txt     ← "Blue Hour"
 ```
 
-Each media file becomes its own entry; without a `.title.txt` the title comes
-from the filename (underscores become spaces).
+Each media file becomes its own entry. Title priority:
+`<file>.title.txt` → LLM title from the prompt (if enabled in
+`release.config.json`) → filename (underscores become spaces).
 
 ## What happens
 

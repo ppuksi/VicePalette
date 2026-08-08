@@ -45,6 +45,7 @@ loadDotEnvLocal(root);
 const cfg = loadReleaseConfig(root);
 const baseUrl = cfg.baseUrl || null;
 const bucket = cfg.bucket || null;
+const titleFromPrompt = Boolean(cfg.titleFromPrompt);
 const remote = Boolean(baseUrl);
 
 const inbox = path.join(root, 'inbox');
@@ -122,6 +123,7 @@ for (const file of candidates) {
       posterFile,
       baseUrl,
       bucket,
+      titleFromPrompt,
     });
 
     // Move the source out of the inbox (kept, not deleted, so a failed build

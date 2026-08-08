@@ -53,12 +53,13 @@ loadDotEnvLocal(root);
 const cfg = loadReleaseConfig(root);
 const baseUrl = arg('--base-url', cfg.baseUrl || null);
 const bucket = arg('--bucket', cfg.bucket || null);
+const titleFromPrompt = Boolean(cfg.titleFromPrompt);
 
 if (dryRun) {
   console.log(`[dry-run] root=${root}`);
   console.log(`[dry-run] file=${file}`);
   console.log(`[dry-run] pipeline=${pipeline}`);
-  console.log(`[dry-run] title=${arg('--title') || '(from filename)'}`);
+  console.log(`[dry-run] title=${arg('--title') || (titleFromPrompt ? '(LLM from prompt)' : '(from filename)')}`);
   console.log(`[dry-run] mode=${baseUrl ? `remote (B2, baseUrl=${baseUrl}, bucket=${bucket || 'MISSING'})` : 'local'}`);
   if (has('--commit')) console.log('[dry-run] would git add + commit');
   if (has('--push')) console.log('[dry-run] would git push');
@@ -75,6 +76,7 @@ const entry = await releaseEntry({
   posterFile: arg('--poster'),
   baseUrl,
   bucket,
+  titleFromPrompt,
 });
 
 console.log('');
