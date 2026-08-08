@@ -28,9 +28,11 @@ export async function b2UploadFile({ keyId, appKey, bucketName, localPath, remot
     );
   }
 
-  const upRes = await fetch(`${apiUrl}/b2api/v2/b2_get_upload_url?bucketId=${allowed.bucketId}`, {
+  // Note: current B2 accounts expect bucketId in the JSON body (not query string).
+  const upRes = await fetch(`${apiUrl}/b2api/v2/b2_get_upload_url`, {
     method: 'POST',
-    headers: { Authorization: authorizationToken },
+    headers: { Authorization: authorizationToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ bucketId: allowed.bucketId }),
   });
   if (!upRes.ok) {
     throw new Error(`b2 get_upload_url failed (${upRes.status}): ${(await upRes.text()).slice(0, 300)}`);

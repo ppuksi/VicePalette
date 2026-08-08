@@ -8,7 +8,7 @@
 // (B2_APPLICATION_KEY_ID / B2_APPLICATION_KEY env vars or .env.local).
 //
 // Usage:
-//   node scripts/migrate-to-b2.mjs [--dry-run] [--commit]
+//   node scripts/migrate-to-b2.mjs [--root <repo-root>] [--dry-run] [--commit]
 //
 // --dry-run shows what would be uploaded/rewritten without touching anything.
 
@@ -77,6 +77,12 @@ for (const mdFile of entries) {
   }
 
   const files = fs.readdirSync(mediaDir);
+  if (files.length === 0) {
+    console.warn(`skip ${slug}: media folder is empty (nothing to upload) — entry left as-is`);
+    skipped++;
+    continue;
+  }
+
   console.log(`\n${slug}: ${files.length} file(s) -> b2://${bucket}/gallery/${slug}/`);
   for (const f of files) {
     const localPath = path.join(mediaDir, f);
@@ -96,7 +102,7 @@ for (const mdFile of entries) {
   migrated++;
 }
 
-console.log(`\n${dryRun ? 'Dry run' : 'Done'}: ${migrated} migrated, ${skipped} skipped (already remote or missing).`);
+console.log(`\n${dryRun ? 'Dry run' : 'Done'}: ${migrated} migrated, ${skipped} skipped (already remote, missing or empty).`);
 
 if (!dryRun && commit && migrated > 0) {
   execSync(`git add -A -- "${mdDir}" "${galleryDir}"`, { cwd: root, stdio: 'inherit' });
