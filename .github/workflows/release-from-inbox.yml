@@ -1,0 +1,79 @@
+name: Release from inbox
+
+on:
+  # Instant: someone pushed media into inbox/ (agent, web upload, phone, ...)
+  push:
+    branches: [main]
+    paths: ['inbox/**']
+  # Safety net: PC off, nobody pushed — sweep the inbox every 15 minutes
+  schedule:
+    - cron: '*/15 * * * *'
+  # Manual: Actions tab -> "Release from inbox" -> Run workflow
+  workflow_dispatch:
+    inputs:
+      pipeline:
+        description: 'Pipeline to tag entries with (overrides pipeline.txt)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: release-inbox
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Process inbox
+        run: |
+          PIPELINE="${{ inputs.pipeline }}"
+          if [ -n "$PIPELINE" ]; then
+            node scripts/process-inbox.mjs --root "$GITHUB_WORKSPACE" --pipeline "$PIPELINE"
+          else
+            node scripts/process-inbox.mjs --root "$GITHUB_WORKSPACE"
+          fi
+
+      - name: Check for changes
+        id: check
+        run: |
+          if git status --porcelain | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Nothing to release."
+          fi
+
+      # Validate entries against the content schema BEFORE anything is committed.
+      # If this fails the inbox files are untouched (job workspace is discarded).
+      - name: Validate build
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          npm ci
+          npm run build
+
+      - name: Commit and push
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          git config user.name "vicepalette-bot"
+          git config user.email "vicepalette-bot@users.noreply.github.com"
+          git add -A
+          git commit -m "release: gallery entries from inbox"
+          git push
+
+      # GITHUB_TOKEN commits don't re-trigger workflows, so dispatch the
+      # deploy explicitly.
+      - name: Trigger deploy
+        if: steps.check.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref main

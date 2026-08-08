@@ -38,5 +38,14 @@ public/
 - The hero waveform animates from noise to a resolved signal on load, and
   respects `prefers-reduced-motion` (renders the resolved state directly,
   no animation).
+
+## Automation
+
+Releasing art to the gallery is scripted and cloud-driven — see
+`AUTOMATION.md` for the full guide. Quick versions:
+
+- **Local (agent):** `node scripts/release-gallery.mjs --file <media> --pipeline <p> [--title ".."] [--tags a,b] [--commit] [--push]`
+- **From anywhere (PC off):** drop media in `inbox/` — the "Release from inbox"
+  GitHub Actions workflow publishes it automatically.
 - No JS framework, no build-time dependencies beyond Astro itself — this
   should stay a fast, cheap static build indefinitely.

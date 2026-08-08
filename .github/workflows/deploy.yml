@@ -3,6 +3,9 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+    # inbox pushes are handled by the "Release from inbox" workflow —
+    # don't rebuild the site twice for the same change.
+    paths-ignore: ['inbox/**']
   workflow_dispatch:
 
 permissions:
