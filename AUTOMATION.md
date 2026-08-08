@@ -68,6 +68,40 @@ a push without git.
   you can swap Hermes for another agent (or run several) without touching any
   of this infrastructure.
 
+## B2 remote mode (keep adult content off GitHub)
+
+GitHub Pages is fine for the site *code*, but hosting adult image binaries on
+GitHub risks a takedown of the whole site. The clean split:
+
+- **Images → Backblaze B2** (public bucket, adult-content-friendly, 10 GB free).
+- **Repo → code + entry metadata only** (markdown with full image URLs).
+
+Setup:
+
+1. Create a **public** bucket in B2 (e.g. `vicepalette-gallery`).
+2. Create an application key **scoped to that bucket only** (not account-wide).
+3. Fill in `release.config.json`:
+   ```json
+   { "bucket": "vicepalette-gallery",
+     "baseUrl": "https://f002.backblazeb2.com/file/vicepalette-gallery" }
+   ```
+   (`baseUrl` is what appears before `/gallery/<slug>/<file>` in entry URLs.
+   Optionally set up a B2 Friendly URL / custom subdomain and use that instead.)
+4. Credentials:
+   - **GitHub Actions** (cloud inbox worker): add repo secrets
+     `B2_APPLICATION_KEY_ID` and `B2_APPLICATION_KEY`
+     (Settings → Secrets and variables → Actions).
+   - **Local scripts**: same two names in `.env.local` (gitignored) or env vars.
+
+With `baseUrl` set, `release-gallery.mjs` and `process-inbox.mjs` automatically
+switch to remote mode: media is uploaded to B2, entries get full URLs, and no
+binaries enter the repo. To move existing local entries over:
+
+```
+node scripts/migrate-to-b2.mjs --dry-run   # preview
+node scripts/migrate-to-b2.mjs --commit    # upload, rewrite entries, drop binaries
+```
+
 ## Troubleshooting
 
 - Check **Actions** tab: failed runs say why (e.g. schema validation).

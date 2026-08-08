@@ -2,6 +2,12 @@
 // Inbox worker: scans <root>/inbox for media files and releases each one as a
 // gallery entry (title derived from filename).
 //
+// Local mode (default): media moves into public/gallery/<slug>/ and the entry
+// markdown is written. Remote mode (release.config.json has baseUrl + bucket):
+// media is uploaded to Backblaze B2 and only entry metadata is written — no
+// binaries in the repo. B2 credentials: B2_APPLICATION_KEY_ID /
+// B2_APPLICATION_KEY env vars or <root>/.env.local.
+//
 // After a successful release the source files are MOVED to
 // <root>/inbox/.processed/<timestamp>/ (gitignored) and one line per entry is
 // appended to <root>/.inbox-log.jsonl for traceability. Nothing is committed —
@@ -21,7 +27,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { releaseEntry, mediaTypeOf } from './gallery-lib.mjs';
+import { releaseEntry, mediaTypeOf, loadReleaseConfig, loadDotEnvLocal } from './gallery-lib.mjs';
 
 const args = process.argv.slice(2);
 function arg(name, def = null) {
@@ -33,6 +39,12 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(arg('--root', path.join(scriptDir, '..')));
 const dryRun = args.includes('--dry-run');
 const cliPipeline = arg('--pipeline');
+
+loadDotEnvLocal(root);
+const cfg = loadReleaseConfig(root);
+const baseUrl = cfg.baseUrl || null;
+const bucket = cfg.bucket || null;
+const remote = Boolean(baseUrl);
 
 const inbox = path.join(root, 'inbox');
 if (!fs.existsSync(inbox)) {
@@ -66,6 +78,8 @@ if (candidates.length === 0) {
   process.exit(0);
 }
 
+console.log(remote ? `Remote mode: uploading to B2 (${bucket}) — baseUrl ${baseUrl}` : 'Local mode: media goes into the repo.');
+
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 const processedDir = path.join(inbox, '.processed', stamp);
 
@@ -93,13 +107,15 @@ for (const file of candidates) {
   }
 
   try {
-    const entry = releaseEntry({
+    const entry = await releaseEntry({
       root,
       mediaFile: file,
       pipeline,
       tags,
       description,
       posterFile,
+      baseUrl,
+      bucket,
     });
 
     // Move the source out of the inbox (kept, not deleted, so a failed build
@@ -123,7 +139,7 @@ for (const file of candidates) {
     });
     fs.appendFileSync(path.join(root, '.inbox-log.jsonl'), logLine + '\n', 'utf8');
 
-    console.log(`released: ${path.relative(root, file)}  ->  ${entry.slug}`);
+    console.log(`released: ${path.relative(root, file)}  ->  ${entry.slug}  (${entry.remote ? entry.src : 'local'})`);
     released++;
   } catch (err) {
     console.error(`FAILED: ${file} — ${err.message}`);

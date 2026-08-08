@@ -1,9 +1,17 @@
 // Shared helpers for releasing gallery entries into the VicePalette repo.
-// Used by release-gallery.mjs (one-shot CLI) and process-inbox.mjs (inbox worker).
+// Used by release-gallery.mjs (one-shot CLI), process-inbox.mjs (inbox worker)
+// and migrate-to-b2.mjs (moving existing entries to remote hosting).
+//
+// Two modes:
+//   local  (default)  media copied into public/gallery/<slug>/, src is a site path
+//   remote (B2)       media uploaded to a Backblaze B2 bucket, src is a full URL;
+//                     nothing binary is committed to the repo (adult-safe hosting)
 
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { b2UploadFile } from './b2-upload.mjs';
 
 export const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']);
 export const VIDEO_EXTS = new Set(['.mp4', '.webm', '.mov', '.m4v', '.ogv']);
@@ -72,27 +80,68 @@ export function makePosterFromVideo(videoPath, posterPath) {
   return res.status === 0 && fs.existsSync(posterPath);
 }
 
+// ---- release config -------------------------------------------------------
+
+export function loadReleaseConfig(root) {
+  const p = path.join(root, 'release.config.json');
+  const def = { bucket: '', baseUrl: '' };
+  if (!fs.existsSync(p)) return def;
+  try {
+    return { ...def, ...JSON.parse(fs.readFileSync(p, 'utf8')) };
+  } catch {
+    return def;
+  }
+}
+
+// Load KEY=VALUE lines from <root>/.env.local into process.env (never overrides
+// already-set env vars). For local B2 credentials.
+export function loadDotEnvLocal(root) {
+  const p = path.join(root, '.env.local');
+  if (!fs.existsSync(p)) return;
+  for (const line of fs.readFileSync(p, 'utf8').split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
+    if (m && !(m[1] in process.env)) {
+      process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+    }
+  }
+}
+
+// ---- release --------------------------------------------------------------
+
 /**
- * Copy a media file into public/gallery/<slug>/ and write the markdown entry.
- * Returns { slug, mediaDir, mdPath, src, poster, title, pipeline, mediaType, date }.
+ * Release a media file as a gallery entry.
+ *
+ * local mode:  copies media into public/gallery/<slug>/ (committed to the repo)
+ * remote mode: uploads media to B2 and writes only the entry markdown, with
+ *              `src`/`poster` as full URLs (baseUrl + path). Media is staged in
+ *              <root>/.local-media/ (gitignored) for poster extraction.
+ *
+ * Returns { slug, mediaDir, mdPath, src, poster, title, pipeline, mediaType, date, remote }.
  */
-export function releaseEntry({
+export async function releaseEntry({
   root,
   mediaFile,
   title = null,
   pipeline,
   tags = '',
   description = '',
-  posterFile = null, // pre-existing poster image to copy in (used before ffmpeg)
+  posterFile = null, // pre-existing poster image to use (copied/uploaded)
+  baseUrl = null,
+  bucket = null,
 }) {
   const mediaPath = path.resolve(mediaFile);
   if (!fs.existsSync(mediaPath)) throw new Error(`File not found: ${mediaFile}`);
   const mediaType = mediaTypeOf(mediaPath);
   if (!mediaType) throw new Error(`Unsupported media type: ${path.basename(mediaPath)}`);
 
+  const remote = Boolean(baseUrl);
   const finalTitle = title || titleFromFilename(path.basename(mediaPath));
   const slug = uniqueSlug(root, slugify(finalTitle));
-  const mediaDir = path.join(root, 'public', 'gallery', slug);
+
+  // Stage dir: committed (public/) in local mode, gitignored (.local-media/) in remote mode.
+  const mediaDir = remote
+    ? path.join(root, '.local-media', slug)
+    : path.join(root, 'public', 'gallery', slug);
   fs.mkdirSync(mediaDir, { recursive: true });
 
   const fileName = path.basename(mediaPath);
@@ -100,18 +149,53 @@ export function releaseEntry({
   fs.copyFileSync(mediaPath, destFile);
 
   let poster = null;
+  let posterLocal = null;
   if (posterFile && fs.existsSync(posterFile)) {
     const posterName = path.basename(posterFile);
-    fs.copyFileSync(posterFile, path.join(mediaDir, posterName));
-    poster = `/gallery/${slug}/${posterName}`;
+    posterLocal = path.join(mediaDir, posterName);
+    fs.copyFileSync(posterFile, posterLocal);
+    poster = `${remote ? baseUrl : ''}/gallery/${slug}/${posterName}`;
   } else if (mediaType === 'video') {
     const generated = path.join(mediaDir, 'poster.jpg');
     if (makePosterFromVideo(destFile, generated)) {
-      poster = `/gallery/${slug}/poster.jpg`;
+      posterLocal = generated;
+      poster = `${remote ? baseUrl : ''}/gallery/${slug}/poster.jpg`;
     }
   }
 
-  const src = `/gallery/${slug}/${fileName}`;
+  if (remote) {
+    if (!bucket) {
+      throw new Error('Remote mode needs a bucket: set "bucket" in release.config.json or pass --bucket');
+    }
+    const keyId = process.env.B2_APPLICATION_KEY_ID;
+    const appKey = process.env.B2_APPLICATION_KEY;
+    if (!keyId || !appKey) {
+      throw new Error(
+        'B2 credentials missing. Set B2_APPLICATION_KEY_ID and B2_APPLICATION_KEY ' +
+          '(env vars or .env.local) — see AUTOMATION.md.'
+      );
+    }
+    await b2UploadFile({
+      keyId,
+      appKey,
+      bucketName: bucket,
+      localPath: destFile,
+      remotePath: `gallery/${slug}/${fileName}`,
+    });
+    if (posterLocal) {
+      await b2UploadFile({
+        keyId,
+        appKey,
+        bucketName: bucket,
+        localPath: posterLocal,
+        remotePath: `gallery/${slug}/${path.basename(posterLocal)}`,
+      });
+    }
+  }
+
+  const src = remote
+    ? `${baseUrl}/gallery/${slug}/${fileName}`
+    : `/gallery/${slug}/${fileName}`;
   const date = today();
   const mdPath = path.join(root, 'src', 'content', 'gallery', `${slug}.md`);
 
@@ -136,5 +220,5 @@ export function releaseEntry({
 
   fs.writeFileSync(mdPath, lines.join('\n'), 'utf8');
 
-  return { slug, mediaDir, mdPath, src, poster, title: finalTitle, pipeline, mediaType, date };
+  return { slug, mediaDir, mdPath, src, poster, title: finalTitle, pipeline, mediaType, date, remote };
 }

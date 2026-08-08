@@ -35,6 +35,9 @@ jobs:
           node-version: 22
 
       - name: Process inbox
+        env:
+          B2_APPLICATION_KEY_ID: ${{ secrets.B2_APPLICATION_KEY_ID }}
+          B2_APPLICATION_KEY: ${{ secrets.B2_APPLICATION_KEY }}
         run: |
           PIPELINE="${{ inputs.pipeline }}"
           if [ -n "$PIPELINE" ]; then

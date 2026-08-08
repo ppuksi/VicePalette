@@ -6,6 +6,13 @@
 //     [--title "Title"] [--tags a,b,c] [--description "..."] [--poster <path>] \
 //     [--root <repo-root>] [--commit] [--push] [--dry-run]
 //
+// Modes:
+//   local  (default)  media is copied into the repo (public/gallery/<slug>/)
+//   remote (B2)       media is uploaded to Backblaze B2; only entry metadata is
+//                     committed. Set "bucket"/"baseUrl" in release.config.json
+//                     (or --bucket/--base-url) and B2_APPLICATION_KEY_ID /
+//                     B2_APPLICATION_KEY in the environment or .env.local.
+//
 // Examples:
 //   node scripts/release-gallery.mjs --file C:\Users\Pasi\Pictures\art.png \
 //     --title "Neon City" --pipeline krea2 --tags neon,cyberpunk --commit --push
@@ -17,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { releaseEntry } from './gallery-lib.mjs';
+import { releaseEntry, loadReleaseConfig, loadDotEnvLocal } from './gallery-lib.mjs';
 
 const args = process.argv.slice(2);
 function arg(name, def = null) {
@@ -42,17 +49,23 @@ if (!pipeline) {
   process.exit(2);
 }
 
+loadDotEnvLocal(root);
+const cfg = loadReleaseConfig(root);
+const baseUrl = arg('--base-url', cfg.baseUrl || null);
+const bucket = arg('--bucket', cfg.bucket || null);
+
 if (dryRun) {
   console.log(`[dry-run] root=${root}`);
   console.log(`[dry-run] file=${file}`);
   console.log(`[dry-run] pipeline=${pipeline}`);
   console.log(`[dry-run] title=${arg('--title') || '(from filename)'}`);
+  console.log(`[dry-run] mode=${baseUrl ? `remote (B2, baseUrl=${baseUrl}, bucket=${bucket || 'MISSING'})` : 'local'}`);
   if (has('--commit')) console.log('[dry-run] would git add + commit');
   if (has('--push')) console.log('[dry-run] would git push');
   process.exit(0);
 }
 
-const entry = releaseEntry({
+const entry = await releaseEntry({
   root,
   mediaFile: file,
   title: arg('--title'),
@@ -60,10 +73,12 @@ const entry = releaseEntry({
   tags: arg('--tags'),
   description: arg('--description') || '',
   posterFile: arg('--poster'),
+  baseUrl,
+  bucket,
 });
 
 console.log('');
-console.log('Released:');
+console.log(`Released (${entry.remote ? 'remote → B2' : 'local → repo'}):`);
 console.log(`  title      ${entry.title}`);
 console.log(`  pipeline   ${entry.pipeline}`);
 console.log(`  slug       ${entry.slug}`);
@@ -73,7 +88,10 @@ if (entry.poster) console.log(`  poster     ${entry.poster}`);
 console.log(`  entry md   ${entry.mdPath}`);
 
 if (has('--commit')) {
-  execSync(`git add -- "${entry.mediaDir}" "${entry.mdPath}"`, { cwd: root, stdio: 'inherit' });
+  // In remote mode the media lives in .local-media/ (gitignored) — only the
+  // entry markdown goes into the commit.
+  const addPaths = entry.remote ? [entry.mdPath] : [entry.mediaDir, entry.mdPath];
+  execSync(`git add -- ${addPaths.map((p) => `"${p}"`).join(' ')}`, { cwd: root, stdio: 'inherit' });
   execSync(`git commit -m "release: ${entry.title}"`, { cwd: root, stdio: 'inherit' });
   console.log('Committed.');
 }
