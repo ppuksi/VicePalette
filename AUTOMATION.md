@@ -102,6 +102,26 @@ node scripts/migrate-to-b2.mjs --dry-run   # preview
 node scripts/migrate-to-b2.mjs --commit    # upload, rewrite entries, drop binaries
 ```
 
+## Metadata hygiene (workflow stripping)
+
+ComfyUI PNGs can embed their full node graph in a `workflow` tEXt chunk (and
+prompt data in `prompt`/`parameters` chunks). The release pipeline sanitizes
+the **staged upload copy** automatically: `workflow` chunks are stripped,
+`prompt`/`parameters` generation data is kept byte-for-byte. Your source
+pipeline files are never touched.
+
+Standalone tool (same behavior as `C:\Test\AI\strip_workflow.bat`, but keeps
+prompts by default):
+
+```
+node scripts/sanitize-image.mjs --in file.png                  # strip workflow
+node scripts/sanitize-image.mjs --in file.png --strip workflow,prompt   # match strip_workflow.bat
+```
+
+Note: if you run `strip_workflow.bat` on source files *before* releasing them,
+the prompt data is removed at the source, so it won't be in the gallery copy
+either — only run it on files you don't need generation data from.
+
 ## Troubleshooting
 
 - Check **Actions** tab: failed runs say why (e.g. schema validation).

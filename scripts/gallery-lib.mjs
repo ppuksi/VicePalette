@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { b2UploadFile } from './b2-upload.mjs';
+import { sanitizePng } from './sanitize-image.mjs';
 
 export const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']);
 export const VIDEO_EXTS = new Set(['.mp4', '.webm', '.mov', '.m4v', '.ogv']);
@@ -148,6 +149,15 @@ export async function releaseEntry({
   const destFile = path.join(mediaDir, fileName);
   fs.copyFileSync(mediaPath, destFile);
 
+  // Sanitize the staged copy BEFORE it can reach the repo or B2: drop ComfyUI
+  // "workflow" graphs, keep generation data ("prompt"/"parameters" chunks).
+  // Only PNGs carry these chunks; the source file is never touched.
+  let sanitized = 0;
+  if (mediaType === 'image' && path.extname(destFile).toLowerCase() === '.png') {
+    const res = sanitizePng(destFile, destFile, { strip: ['workflow'] });
+    sanitized = res.dropped;
+  }
+
   let poster = null;
   let posterLocal = null;
   if (posterFile && fs.existsSync(posterFile)) {
@@ -220,5 +230,5 @@ export async function releaseEntry({
 
   fs.writeFileSync(mdPath, lines.join('\n'), 'utf8');
 
-  return { slug, mediaDir, mdPath, src, poster, title: finalTitle, pipeline, mediaType, date, remote };
+  return { slug, mediaDir, mdPath, src, poster, title: finalTitle, pipeline, mediaType, date, remote, sanitized };
 }

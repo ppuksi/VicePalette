@@ -85,6 +85,7 @@ console.log(`  slug       ${entry.slug}`);
 console.log(`  mediaType  ${entry.mediaType}`);
 console.log(`  media      ${entry.src}`);
 if (entry.poster) console.log(`  poster     ${entry.poster}`);
+if (entry.sanitized > 0) console.log(`  sanitize   stripped ${entry.sanitized} workflow chunk(s) from staged copy`);
 console.log(`  entry md   ${entry.mdPath}`);
 
 if (has('--commit')) {
