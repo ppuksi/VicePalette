@@ -1,5 +1,5 @@
 ---
-title: "rooftop dance night 01"
+title: "Neon Rooftop Reverie"
 pipeline: "krea2"
 date: 2026-08-08
 mediaType: "image"

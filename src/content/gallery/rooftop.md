@@ -1,5 +1,5 @@
 ---
-title: "rooftop"
+title: "Blue Hour Rooftop Turn"
 pipeline: "krea2"
 date: 2026-08-08
 mediaType: "image"

@@ -1,5 +1,5 @@
 ---
-title: "golden pole 02"
+title: "Mid-Spin Golden Tease"
 pipeline: "krea2"
 date: 2026-08-08
 mediaType: "image"

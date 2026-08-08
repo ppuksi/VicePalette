@@ -1,5 +1,5 @@
 ---
-title: "pool strip night"
+title: "Pool lights, midnight dare."
 pipeline: "krea2"
 date: 2026-08-08
 mediaType: "image"

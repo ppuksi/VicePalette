@@ -1,5 +1,5 @@
 ---
-title: "studio flash"
+title: "Strobe and Arch, Midnight Muse"
 pipeline: "krea2"
 date: 2026-08-08
 mediaType: "image"

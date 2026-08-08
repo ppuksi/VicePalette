@@ -1,5 +1,5 @@
 ---
-title: "candlelight bath"
+title: "Candlelight Bath, Quiet Contentment"
 pipeline: "krea2"
 date: 2026-08-08
 mediaType: "image"

@@ -1,5 +1,5 @@
 ---
-title: "kitchen latex gloves"
+title: "Latex Glow in the Half-Light"
 pipeline: "krea2"
 date: 2026-08-08
 mediaType: "image"

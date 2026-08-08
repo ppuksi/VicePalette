@@ -1,5 +1,5 @@
 ---
-title: "window dance"
+title: "City Glow, Slow Dance"
 pipeline: "krea2"
 date: 2026-08-08
 mediaType: "image"

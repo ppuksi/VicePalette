@@ -1,5 +1,5 @@
 ---
-title: "doorway strip"
+title: "Silk Slips in Amber Light"
 pipeline: "krea2"
 date: 2026-08-08
 mediaType: "image"

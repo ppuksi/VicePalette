@@ -1,5 +1,5 @@
 ---
-title: "hallway 01"
+title: "Evening Key, Robe Slips"
 pipeline: "krea2"
 date: 2026-08-08
 mediaType: "image"

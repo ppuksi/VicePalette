@@ -1,5 +1,5 @@
 ---
-title: "afterparty 01"
+title: "Midnight Milk and Fridge Light"
 pipeline: "krea2"
 date: 2026-08-08
 mediaType: "image"

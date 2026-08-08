@@ -1,5 +1,5 @@
 ---
-title: "pool 01"
+title: "Drowning in Violet Light"
 pipeline: "krea2"
 date: 2026-08-08
 mediaType: "image"

@@ -1,5 +1,5 @@
 ---
-title: "rain latex"
+title: "Neon Baptism in Latex Rain"
 pipeline: "krea2"
 date: 2026-08-08
 mediaType: "image"

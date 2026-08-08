@@ -1,5 +1,5 @@
 ---
-title: "pool steps night"
+title: "Night pool, slow surrender"
 pipeline: "krea2"
 date: 2026-08-08
 mediaType: "image"
