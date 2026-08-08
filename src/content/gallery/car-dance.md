@@ -3,7 +3,7 @@ title: "car dance"
 pipeline: "krea2"
 date: 2026-08-08
 mediaType: "image"
-src: "/gallery/car-dance/car_dance.png"
+src: "https://api003.backblazeb2.com/file/vicepalette/gallery/car-dance/car_dance.png"
 description: ""
 # params:
 #   sampler: ""

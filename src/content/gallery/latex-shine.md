@@ -3,7 +3,7 @@ title: "latex shine"
 pipeline: "krea2"
 date: 2026-08-08
 mediaType: "image"
-src: "/gallery/latex-shine/latex_shine.png"
+src: "https://api003.backblazeb2.com/file/vicepalette/gallery/latex-shine/latex_shine.png"
 description: ""
 # params:
 #   sampler: ""

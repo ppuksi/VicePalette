@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
-  <rect width="800" height="600" fill="#161b24"/>
-  <path d="M0 420 Q200 340 400 420 T800 420 V600 H0 Z" fill="#1c222d"/>
-  <circle cx="400" cy="230" r="90" fill="none" stroke="#e8a33d" stroke-width="2" opacity="0.8"/>
-  <circle cx="400" cy="230" r="140" fill="none" stroke="#e8a33d" stroke-width="1" opacity="0.35"/>
-  <text x="400" y="520" text-anchor="middle" font-family="monospace" font-size="20" fill="#8b8f98">sample — replace this file</text>
-</svg>
