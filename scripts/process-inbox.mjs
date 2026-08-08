@@ -14,6 +14,7 @@
 // the caller (a human or the GitHub Actions workflow) commits.
 //
 // Optional metadata files next to the media (or at inbox/ root):
+//   <file>.title.txt  title for ONE entry, e.g. "car_dance.png.title.txt" -> "Neon City Drive"
 //   pipeline.txt     pipeline label, e.g. "krea2"
 //   description.txt  gallery description
 //   tags.txt         comma-separated tags
@@ -101,6 +102,10 @@ for (const file of candidates) {
     }
   }
 
+  // Optional per-file title: <media filename>.title.txt next to the media file.
+  const titleFile = path.join(dir, path.basename(file) + '.title.txt');
+  const title = fs.existsSync(titleFile) ? fs.readFileSync(titleFile, 'utf8').trim() || null : null;
+
   if (dryRun) {
     console.log(`[dry-run] would release: ${path.relative(root, file)}  (pipeline: ${pipeline})`);
     continue;
@@ -110,6 +115,7 @@ for (const file of candidates) {
     const entry = await releaseEntry({
       root,
       mediaFile: file,
+      title,
       pipeline,
       tags,
       description,
