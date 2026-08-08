@@ -12,6 +12,8 @@ const gallery = defineCollection({
     mediaType: z.enum(['image', 'video']),
     // path under /public, e.g. "/gallery/my-entry/output.mp4"
     src: z.string(),
+    // small grid thumbnail (images), e.g. "/gallery/my-entry/thumb.jpg"
+    thumb: z.string().optional(),
     // poster frame for video cards/detail view — optional but recommended
     poster: z.string().optional(),
     description: z.string().optional(),

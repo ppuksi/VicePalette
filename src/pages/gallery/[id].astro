@@ -12,7 +12,7 @@ export async function getStaticPaths() {
 
 const { entry } = Astro.props;
 const { Content } = await render(entry);
-const { title, pipeline, date, mediaType, src, poster, params, tags } = entry.data;
+const { title, pipeline, date, mediaType, src, poster, description, params, tags } = entry.data;
 const base = import.meta.env.BASE_URL;
 ---
 
@@ -48,6 +48,7 @@ const base = import.meta.env.BASE_URL;
     )}
 
     <div class="bio">
+      {description && <p class="desc">{description}</p>}
       <Content />
     </div>
   </main>

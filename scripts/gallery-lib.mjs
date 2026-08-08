@@ -81,6 +81,91 @@ export function makePosterFromVideo(videoPath, posterPath) {
   return res.status === 0 && fs.existsSync(posterPath);
 }
 
+// ---- generation data extraction (from PNG tEXt chunks) ---------------------
+
+function readTextChunk(pngPath, keyword) {
+  const b = fs.readFileSync(pngPath);
+  if (!b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return null;
+  let off = 8;
+  while (off + 8 <= b.length) {
+    const len = b.readUInt32BE(off);
+    const type = b.toString('latin1', off + 4, off + 8);
+    if (type === 'tEXt') {
+      const nul = b.indexOf(0, off + 8);
+      if (nul !== -1 && b.toString('latin1', off + 8, nul) === keyword) {
+        return b.subarray(nul + 1, off + 8 + len).toString('latin1');
+      }
+    }
+    off += 12 + len;
+  }
+  return null;
+}
+
+// Pull the human-readable positive prompt + generation settings out of a PNG's
+// metadata ("parameters" chunk, falling back to the ComfyUI "prompt" graph).
+export function extractGenerationData(pngPath) {
+  const out = { prompt: null, params: {} };
+
+  const parameters = readTextChunk(pngPath, 'parameters');
+  if (parameters) {
+    const lines = parameters.split(/\r?\n/);
+    const first = (lines[0] || '').trim();
+    if (first && first.toLowerCase() !== 'unknown') out.prompt = first;
+    const settings = lines.find((l) => /^Steps:/i.test(l)) || '';
+    const map = {
+      steps: 'Steps',
+      sampler: 'Sampler',
+      cfg: 'CFG scale',
+      seed: 'Seed',
+      size: 'Size',
+      model: 'Model',
+      version: 'Version',
+    };
+    for (const [k, label] of Object.entries(map)) {
+      const m = settings.match(new RegExp(label + ':\\s*([^,]+)'));
+      if (m) out.params[k] = m[1].trim();
+    }
+  }
+
+  if (!out.prompt) {
+    const graph = readTextChunk(pngPath, 'prompt');
+    if (graph) {
+      try {
+        const j = JSON.parse(graph);
+        const texts = [];
+        const walk = (o) => {
+          if (typeof o === 'string') return;
+          if (Array.isArray(o)) { o.forEach(walk); return; }
+          if (o && typeof o === 'object') {
+            for (const k of Object.keys(o)) {
+              if (/^text$/i.test(k) && typeof o[k] === 'string' && o[k].length > 20 && !o[k].includes('\\')) {
+                texts.push(o[k].trim());
+              } else {
+                walk(o[k]);
+              }
+            }
+          }
+        };
+        walk(j);
+        if (texts.length) out.prompt = texts.sort((a, b) => b.length - a.length)[0];
+      } catch { /* not JSON — ignore */ }
+    }
+  }
+
+  if (out.prompt) out.prompt = out.prompt.replace(/\s+/g, ' ').trim();
+  return out;
+}
+
+// Generate a small JPEG thumbnail (~500px wide) with ffmpeg. True on success.
+export function makeThumb(sourcePath, thumbPath) {
+  const res = spawnSync(
+    'ffmpeg',
+    ['-y', '-loglevel', 'error', '-i', sourcePath, '-vf', 'scale=500:-1', '-q:v', '4', thumbPath],
+    { stdio: 'ignore', timeout: 60000 }
+  );
+  return res.status === 0 && fs.existsSync(thumbPath);
+}
+
 // ---- release config -------------------------------------------------------
 
 export function loadReleaseConfig(root) {
@@ -158,6 +243,27 @@ export async function releaseEntry({
     sanitized = res.dropped;
   }
 
+  // Generation data: prompt becomes the description, settings become params.
+  let genPrompt = null;
+  let genParams = null;
+  if (mediaType === 'image') {
+    const gen = extractGenerationData(destFile);
+    genPrompt = gen.prompt;
+    genParams = Object.keys(gen.params).length ? gen.params : null;
+  }
+  const finalDescription = (description || genPrompt || '').trim();
+
+  // Grid thumbnail (images only; videos already get a poster).
+  let thumb = null;
+  let thumbLocal = null;
+  if (mediaType === 'image') {
+    const tPath = path.join(mediaDir, 'thumb.jpg');
+    if (makeThumb(destFile, tPath)) {
+      thumbLocal = tPath;
+      thumb = `${remote ? baseUrl : ''}/gallery/${slug}/thumb.jpg`;
+    }
+  }
+
   let poster = null;
   let posterLocal = null;
   if (posterFile && fs.existsSync(posterFile)) {
@@ -201,6 +307,15 @@ export async function releaseEntry({
         remotePath: `gallery/${slug}/${path.basename(posterLocal)}`,
       });
     }
+    if (thumbLocal) {
+      await b2UploadFile({
+        keyId,
+        appKey,
+        bucketName: bucket,
+        localPath: thumbLocal,
+        remotePath: `gallery/${slug}/thumb.jpg`,
+      });
+    }
   }
 
   const src = remote
@@ -217,18 +332,38 @@ export async function releaseEntry({
     `mediaType: "${mediaType}"`,
     `src: "${yamlStr(src)}"`,
   ];
+  if (thumb) lines.push(`thumb: "${yamlStr(thumb)}"`);
   if (poster) lines.push(`poster: "${yamlStr(poster)}"`);
-  lines.push(`description: "${yamlStr(description)}"`);
-  lines.push('# params:');
-  lines.push('#   sampler: ""');
-  lines.push('#   cfg: ""');
-  lines.push('#   steps: ""');
-  lines.push('#   seed: ""');
+  lines.push(`description: "${yamlStr(finalDescription)}"`);
+  if (genParams) {
+    lines.push('params:');
+    for (const [k, v] of Object.entries(genParams)) lines.push(`  ${k}: "${yamlStr(v)}"`);
+  } else {
+    lines.push('# params:');
+    lines.push('#   sampler: ""');
+    lines.push('#   cfg: ""');
+    lines.push('#   steps: ""');
+    lines.push('#   seed: ""');
+  }
   const tagList = [...new Set(parseTags(tags))];
   lines.push(`tags: [${tagList.map((t) => `"${yamlStr(t)}"`).join(', ')}]`);
   lines.push('---', '', '');
 
   fs.writeFileSync(mdPath, lines.join('\n'), 'utf8');
 
-  return { slug, mediaDir, mdPath, src, poster, title: finalTitle, pipeline, mediaType, date, remote, sanitized };
+  return {
+    slug,
+    mediaDir,
+    mdPath,
+    src,
+    thumb,
+    poster,
+    title: finalTitle,
+    description: finalDescription,
+    pipeline,
+    mediaType,
+    date,
+    remote,
+    sanitized,
+  };
 }

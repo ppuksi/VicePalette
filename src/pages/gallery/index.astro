@@ -27,7 +27,7 @@ const base = import.meta.env.BASE_URL;
           {entry.data.mediaType === 'video' ? (
             <video src={entry.data.src} poster={entry.data.poster} muted loop playsinline preload="metadata" />
           ) : (
-            <img src={entry.data.src} alt={entry.data.title} loading="lazy" />
+            <img src={entry.data.thumb || entry.data.src} alt={entry.data.title} loading="lazy" />
           )}
           <div class="card-meta">
             <span class="card-title">{entry.data.title}</span>

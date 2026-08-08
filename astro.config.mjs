@@ -1,4 +1,5 @@
 import { defineConfig } from 'astro/config';
+import sitemap from '@astrojs/sitemap';
 
 // EDIT THESE before deploying:
 // - site: https://<your-github-username>.github.io
@@ -6,4 +7,5 @@ import { defineConfig } from 'astro/config';
 export default defineConfig({
 	site: 'https://vicepalette.dev',
 	base: '/',
+	integrations: [sitemap()],
 });
