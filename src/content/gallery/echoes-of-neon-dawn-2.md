@@ -13,12 +13,6 @@ params:
   seed: "481978493386291"
   size: "672x1216"
   model: "minimaxH3INT8INT4_fl2vaINT8Pruned"
-  size: "9:16 (Portrait Widescreen) 0.8MP"
-  seed: "481978493386291"
-  sampler: "res_multistep"
-  scheduler: "simple"
-  steps: "20"
-  model: "Minimax H3 / minimaxH3INT8INT4_fl2vaINT8Pruned.safetensors"
 tags: ["video", "h3"]
 ---
 
