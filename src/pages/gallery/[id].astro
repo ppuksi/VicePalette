@@ -24,16 +24,17 @@ const prev = idx > 0 ? all[idx - 1] : null;
 const next = idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;
 const prevHref = prev ? `${base}gallery/${prev.id}/` : null;
 const nextHref = next ? `${base}gallery/${next.id}/` : null;
+
+const dateStr = date.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
 ---
 
 <Layout title={`${title} — Pasi`}>
   <main class="wrap wrap--wide">
-    <a class="back" href={`${base}gallery/`}>&larr; gallery</a>
-    <p class="eyebrow">{pipeline}</p>
-    <h1>{title}</h1>
-    <p class="tagline">
-      {date.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' })}
-    </p>
+    <div class="entry-head">
+      <a class="back" href={`${base}gallery/`}>&larr; gallery</a>
+      <span class="entry-meta">{pipeline} · {dateStr}</span>
+    </div>
+    <h1 class="entry-title">{title}</h1>
 
     <div class="entry">
       <div class="media-full">
