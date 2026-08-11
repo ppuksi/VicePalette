@@ -222,6 +222,26 @@ footer {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+.card {
+  position: relative;
+}
+.card-badge {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  z-index: 2;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--accent);
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
 .card img,
 .card video {
   display: block;

@@ -41,6 +41,7 @@ const base = import.meta.env.BASE_URL;
           ) : (
             <img src={entry.data.thumb || entry.data.src} alt={entry.data.title} loading="lazy" />
           )}
+          {entry.data.mediaType === 'video' && <span class="card-badge">video</span>}
           <div class="card-meta">
             <span class="card-title">{entry.data.title}</span>
             <span class="card-pipeline">{entry.data.pipeline}</span>
