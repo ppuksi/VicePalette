@@ -156,9 +156,14 @@ export function extractGenerationData(pngPath) {
   return out;
 }
 
-// Pull the full H3-style prompt + settings for a VIDEO from its paired frame
+// Pull the clean H3 scene prompt + settings for a VIDEO from its paired frame
 // PNG (same basename, .png next to the .mp4). Videos themselves carry no
 // readable prompt chunk; the frame PNG written beside each clip does.
+// The parameters chunk is a 7-line metadata blob: boilerplate, an
+// "integrated_multimodal_description:" scene line, soundscape/audio
+// directives, an empty negative prompt, and the settings line (which is
+// already surfaced separately as params). Only the scene line is a prompt;
+// everything else is noise for a gallery description.
 export function extractVideoGenerationData(videoPath) {
   const out = { prompt: null, params: {} };
   const dir = path.dirname(videoPath);
@@ -171,8 +176,12 @@ export function extractVideoGenerationData(videoPath) {
   }
   const parameters = readTextChunk(pngPath, 'parameters');
   if (!parameters) return out;
-  out.prompt = parameters.replace(/\s+/g, ' ').trim();
-  const settings = parameters.split(/\r?\n/).find((l) => /^Steps:/i.test(l)) || '';
+  const lines = parameters.split(/\r?\n/);
+  const scene = lines.find((l) => /^integrated_multimodal_description:/i.test(l));
+  out.prompt = scene
+    ? scene.replace(/^integrated_multimodal_description:\s*/i, '').trim()
+    : (lines.find((l) => l.trim()) || '').trim();
+  const settings = lines.find((l) => /^Steps:/i.test(l)) || '';
   const map = {
     steps: 'Steps',
     sampler: 'Sampler',
@@ -186,60 +195,6 @@ export function extractVideoGenerationData(videoPath) {
     if (m) out.params[k] = m[1].trim();
   }
   return out;
-}
-
-
-// Generate a small JPEG thumbnail (~500px wide) with ffmpeg. True on success.
-export function makeThumb(sourcePath, thumbPath) {
-  const res = spawnSync(
-    'ffmpeg',
-    ['-y', '-loglevel', 'error', '-i', sourcePath, '-vf', 'scale=500:-1', '-q:v', '4', thumbPath],
-    { stdio: 'ignore', timeout: 60000 }
-  );
-  return res.status === 0 && fs.existsSync(thumbPath);
-}
-
-// Ask an LLM (OpenAI-compatible chat API) for a short gallery title for a
-// prompt. Returns null on any failure (missing key, network, bad response) —
-// callers fall back to filename-derived titles.
-//
-// Env:
-//   LLM_API_KEY    API key (required)
-//   LLM_MODEL      default "deepseek-chat"
-//   LLM_BASE_URL   default "https://api.deepseek.com" (OpenAI-compatible)
-//   LLM_API_BASE   test override for the base URL (takes precedence)
-export async function llmTitleFromPrompt(prompt) {
-  const key = process.env.LLM_API_KEY;
-  if (!key) return null;
-  const base = process.env.LLM_API_BASE || process.env.LLM_BASE_URL || 'https://api.deepseek.com';
-  const model = process.env.LLM_MODEL || 'deepseek-chat';
-  try {
-    const res = await fetch(`${base}/chat/completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are a curator naming AI-generated images for an art gallery. ' +
-              'Reply with ONLY a short evocative title, max 6 words, no quotes, no trailing punctuation.',
-          },
-          { role: 'user', content: String(prompt).slice(0, 2000) },
-        ],
-        temperature: 0.7,
-        max_tokens: 24,
-      }),
-    });
-    if (!res.ok) return null;
-    const j = await res.json();
-    const t = j.choices?.[0]?.message?.content?.trim();
-    if (!t) return null;
-    return t.replace(/^["']+|["']+$/g, '').replace(/\s+/g, ' ').trim();
-  } catch {
-    return null;
-  }
 }
 
 // ---- release config -------------------------------------------------------

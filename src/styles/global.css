@@ -31,6 +31,7 @@
 html {
   background: var(--bg);
   color-scheme: dark;
+  overflow-x: clip;
 }
 
 body {
@@ -83,6 +84,8 @@ h1 {
   font-size: 1rem;
   max-width: 58ch;
   margin: 0 0 var(--space-4);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .stack {
@@ -92,6 +95,8 @@ h1 {
   border-top: 1px solid var(--border);
   padding-top: var(--space-3);
   margin-bottom: var(--space-4);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .stack .key {
@@ -103,6 +108,9 @@ h1 {
   display: inline-block;
   color: var(--text);
   margin: 0 0.5rem 0.4rem 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .tag::before {
   content: '·';
