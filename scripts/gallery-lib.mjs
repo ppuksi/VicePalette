@@ -156,6 +156,39 @@ export function extractGenerationData(pngPath) {
   return out;
 }
 
+// Pull the full H3-style prompt + settings for a VIDEO from its paired frame
+// PNG (same basename, .png next to the .mp4). Videos themselves carry no
+// readable prompt chunk; the frame PNG written beside each clip does.
+export function extractVideoGenerationData(videoPath) {
+  const out = { prompt: null, params: {} };
+  const dir = path.dirname(videoPath);
+  const base = path.basename(videoPath, path.extname(videoPath));
+  let pngPath = path.join(dir, base + '.png');
+  if (!fs.existsSync(pngPath)) {
+    const candidates = fs.readdirSync(dir).filter((f) => f.startsWith(base) && f.endsWith('.png'));
+    if (candidates.length) pngPath = path.join(dir, candidates.sort().pop());
+    else return out;
+  }
+  const parameters = readTextChunk(pngPath, 'parameters');
+  if (!parameters) return out;
+  out.prompt = parameters.replace(/\s+/g, ' ').trim();
+  const settings = parameters.split(/\r?\n/).find((l) => /^Steps:/i.test(l)) || '';
+  const map = {
+    steps: 'Steps',
+    sampler: 'Sampler',
+    cfg: 'CFG scale',
+    seed: 'Seed',
+    size: 'Size',
+    model: 'Model',
+  };
+  for (const [k, label] of Object.entries(map)) {
+    const m = settings.match(new RegExp(label + ':\\s*([^,]+)'));
+    if (m) out.params[k] = m[1].trim();
+  }
+  return out;
+}
+
+
 // Generate a small JPEG thumbnail (~500px wide) with ffmpeg. True on success.
 export function makeThumb(sourcePath, thumbPath) {
   const res = spawnSync(
@@ -272,6 +305,10 @@ export async function releaseEntry({
   let genParams = null;
   if (mediaType === 'image') {
     const gen = extractGenerationData(mediaPath);
+    genPrompt = gen.prompt;
+    genParams = Object.keys(gen.params).length ? gen.params : null;
+  } else if (mediaType === 'video') {
+    const gen = extractVideoGenerationData(mediaPath);
     genPrompt = gen.prompt;
     genParams = Object.keys(gen.params).length ? gen.params : null;
   }
