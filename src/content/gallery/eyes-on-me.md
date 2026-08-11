@@ -13,12 +13,6 @@ params:
   seed: "481978493695740"
   size: "672x1216"
   model: "minimaxH3INT8INT4_fl2vaINT8Pruned"
-  steps: "20"
-  sampler: "res_multistep"
-  cfg: "1"
-  seed: "481978493695740"
-  size: "672x1216"
-  model: "minimaxH3INT8INT4_fl2vaINT8Pruned"
 tags: []
 ---
 
