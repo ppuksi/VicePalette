@@ -98,5 +98,45 @@ const dateStr = date.toLocaleDateString('en-GB', { year: 'numeric', month: 'shor
         window.location.href = nextLink.href;
       }
     });
+
+    // Touch swipe left/right (mobile): left = next, right = prev.
+    let touchStartX = null;
+    let touchStartY = null;
+    let touchStartT = 0;
+    let suppressClick = false;
+    const SWIPE_MIN = 60;      // min horizontal px to count as a swipe
+    const SWIPE_MAX_TIME = 600; // max ms for a swipe
+    document.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+      touchStartT = Date.now();
+    }, { passive: true });
+    document.addEventListener('touchend', (e) => {
+      if (touchStartX === null) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - touchStartX;
+      const dy = t.clientY - touchStartY;
+      const dt = Date.now() - touchStartT;
+      touchStartX = null;
+      touchStartY = null;
+      if (dt > SWIPE_MAX_TIME) return;
+      if (Math.abs(dx) < SWIPE_MIN) return;
+      if (Math.abs(dy) > Math.abs(dx) * 1.2) return; // vertical scroll, not a swipe
+      if (dx < 0 && nextLink) {
+        suppressClick = true;
+        window.location.href = nextLink.href;
+      } else if (dx > 0 && prevLink) {
+        suppressClick = true;
+        window.location.href = prevLink.href;
+      }
+    }, { passive: true });
+    document.addEventListener('click', (e) => {
+      if (suppressClick) {
+        e.preventDefault();
+        e.stopPropagation();
+        suppressClick = false;
+      }
+    }, true);
   </script>
 </Layout>
