@@ -5,12 +5,14 @@ date: 2026-08-12
 mediaType: "video"
 src: "https://api003.backblazeb2.com/file/vicepalette/gallery/echoes-of-neon-dawn-2/H3_20260812_000549_w6_jet_ski_spray_00001_.mp4"
 poster: "https://api003.backblazeb2.com/file/vicepalette/gallery/echoes-of-neon-dawn-2/poster.jpg"
-description: "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced."
-# params:
-#   sampler: ""
-#   cfg: ""
-#   steps: ""
-#   seed: ""
+description: "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced. integrated_multimodal_description: [Shot 1] Cinematic, live-action, a water-level cam frames the woman from <Picture 1> riding the jet ski, wet-look magenta bikini, spray, empty lake, spray exploding behind the jet ski, the lake empty and golden. The camera water-level cam low at water height with large amplitude at fast speed as she rides hard, standing, spray exploding behind her, her round ass bouncing on the seat, the wet-look bikini clinging to every curve. At 00:02.000, the shot cuts to a closer angle from the side as she drops to her knees on the seat, arches her back, and shakes her wet ass at the camera, spray raining over her, the camera pushes in with large amplitude at fast speed. <scenetrans> The music and ambient sound continue seamlessly across the cut. At 00:04.500, the shot cuts to a drone rise as she stands again, turns, and rides toward the camera, spray exploding, her breasts bouncing under the tiny top, the camera drone rises and drops with large amplitude at fast speed. <scenetrans> The music and ambient sound continue seamlessly across the cut. the shot holds on her riding past, spray glowing in the sun overall_soundscape: The jet ski engine screams, water spraying and splashing, and a heavy bass track thumps from a speaker on the ski, loud but clean, never clipping, continuous through the shot. No speech, no talking, no voices, no dialogue, no vocals, no singing. The surrounding sound continues steadily throughout the whole shot, never stopping. non_diegetic_music: N/A Negative prompt:  Steps: 20, Sampler: res_multistep, Schedule type: simple, CFG scale: 1, Seed: 481978493386291, Size: 672x1216, Model: minimaxH3INT8INT4_fl2vaINT8Pruned, Frames: 192, First frame: w6_jet_ski_spray.png (Krea2 FAST), Krea prompt: A candid iPhone photograph. a young woman in her early twenties, petite with large silicone breasts and a big round latina booty, slim waist, striking arched brows, bright eyes, full lips, dark hair soaked, wearing a tight wet-look magenta bikini, the top tiny, the bottoms wedged deep. The subject is standing on the jet ski, leaning forward, wet-look bikini clinging, spray flying, alone. She is alone, no other people in the frame. The setting is an empty lake at golden hour, no boats, no swimmers, no people anywhere, water smooth ahead. The scene takes place in at golden hour. The body position is standing on the jet ski, leaning forward, wet-look bikini clinging, spray flying, her full body visible, with an ecstatic, wild expression. The image uses a medium-wide shot showing her full body, a low angle looking up and a careless snapshot framing. Lighting is low golden sun on the water. The final treatment uses the lightly compressed look of a modern phone camera with a slightly noisy sensor., Civitai resources: [{\"modelName\": \"Minimax H3 INT8/INT4 ConvRot\", \"versionName\": \"FL2VA INT8 Pruned\", \"air\": \"urn:air:minimaxh3:diffusionmodel:civitai:2830065@3193337\"}]"
+params:
+  size: "9:16 (Portrait Widescreen) 0.8MP"
+  seed: "481978493386291"
+  sampler: "res_multistep"
+  scheduler: "simple"
+  steps: "20"
+  model: "Minimax H3 / minimaxH3INT8INT4_fl2vaINT8Pruned.safetensors"
 tags: ["video", "h3"]
 ---
 
