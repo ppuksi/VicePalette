@@ -14,6 +14,16 @@ const { entry } = Astro.props;
 const { Content } = await render(entry);
 const { title, pipeline, date, mediaType, src, poster, description, params, tags } = entry.data;
 const base = import.meta.env.BASE_URL;
+
+// Prev/next navigation in the same date-desc order as the gallery grid.
+const all = (await getCollection('gallery')).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+const idx = all.findIndex((e) => e.id === entry.id);
+const prev = idx > 0 ? all[idx - 1] : null;
+const next = idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;
+const prevHref = prev ? `${base}gallery/${prev.id}/` : null;
+const nextHref = next ? `${base}gallery/${next.id}/` : null;
 ---
 
 <Layout title={`${title} — Pasi`}>
@@ -33,6 +43,9 @@ const base = import.meta.env.BASE_URL;
       )}
     </div>
 
+    {prevHref && <a class="side-arrow side-prev" href={prevHref} aria-label={`Previous entry: ${prev.data.title}`}>&#8592;</a>}
+    {nextHref && <a class="side-arrow side-next" href={nextHref} aria-label={`Next entry: ${next.data.title}`}>&#8594;</a>}
+
     {params && (
       <div class="stack">
         <span class="key">params:</span>
@@ -51,5 +64,34 @@ const base = import.meta.env.BASE_URL;
       {description && <p class="desc">{description}</p>}
       <Content />
     </div>
+
+    <nav class="entry-nav" aria-label="Entry navigation">
+      {prevHref ? (
+        <a class="nav-arrow nav-prev" href={prevHref}>&larr; <span>{prev.data.title}</span></a>
+      ) : (
+        <span class="nav-arrow is-off" aria-hidden="true">&larr; start</span>
+      )}
+      {nextHref ? (
+        <a class="nav-arrow nav-next" href={nextHref}><span>{next.data.title}</span> &rarr;</a>
+      ) : (
+        <span class="nav-arrow is-off" aria-hidden="true">end &rarr;</span>
+      )}
+    </nav>
   </main>
+
+  <script>
+    // Keyboard left/right navigation between gallery entries.
+    const prevLink = document.querySelector('.nav-prev');
+    const nextLink = document.querySelector('.nav-next');
+    document.addEventListener('keydown', (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
+      if (e.key === 'ArrowLeft' && prevLink) {
+        e.preventDefault();
+        window.location.href = prevLink.href;
+      } else if (e.key === 'ArrowRight' && nextLink) {
+        e.preventDefault();
+        window.location.href = nextLink.href;
+      }
+    });
+  </script>
 </Layout>

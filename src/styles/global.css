@@ -268,3 +268,94 @@ footer {
 .back:focus-visible {
   color: var(--accent);
 }
+/* Gallery entry page: fit image to viewport + prev/next navigation */
+.media-full {
+  margin: var(--space-3) 0 var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 360px);
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.media-full img,
+.media-full video {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border: 1px solid var(--border);
+}
+
+.side-arrow {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 72px;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-decoration: none;
+  opacity: 0.85;
+  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.side-prev { left: 12px; }
+.side-next { right: 12px; }
+.side-arrow:hover,
+.side-arrow:focus-visible {
+  opacity: 1;
+  color: var(--text);
+  border-color: var(--accent);
+  outline: none;
+}
+
+.entry-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+.entry-nav .nav-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 45%;
+  color: var(--text-muted);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.entry-nav .nav-arrow span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.entry-nav .nav-arrow:hover,
+.entry-nav .nav-arrow:focus-visible {
+  color: var(--text);
+  border-color: var(--accent);
+  outline: none;
+}
+.entry-nav .nav-arrow.is-off {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@media (max-width: 768px) {
+  .side-arrow { display: none; }
+  .entry-nav .nav-arrow { max-width: 48%; }
+}
