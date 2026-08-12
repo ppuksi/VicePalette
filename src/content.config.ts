@@ -20,6 +20,11 @@ const gallery = defineCollection({
     // free-form key/value pairs: sampler, cfg, steps, seed, model, denoise...
     params: z.record(z.string()).optional(),
     tags: z.array(z.string()).default([]),
+    // scheduled release: entry stays hidden until this UTC instant
+    publishAt: z.coerce.date().optional(),
+    // set to true by the scheduled-release workflow once it has been
+    // revealed; purely a marker so the cron doesn't redeploy forever
+    published: z.boolean().optional(),
   }),
 });
 

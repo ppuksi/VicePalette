@@ -5,3 +5,6 @@ dist/
 inbox/.processed/
 .local-media/
 .env.local
+scripts/fanvue_config.json
+scripts/fanvue_tokens.json
+.fanvue-month/

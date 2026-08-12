@@ -2,9 +2,10 @@
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
-const entries = (await getCollection('gallery')).sort(
-  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
-);
+const now = Date.now();
+const entries = (await getCollection('gallery'))
+  .filter((e) => !e.data.publishAt || e.data.publishAt.getTime() <= now)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
 const pipelines = [...new Set(entries.map((e) => e.data.pipeline))].sort();
 

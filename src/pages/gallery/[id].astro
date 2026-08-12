@@ -3,7 +3,10 @@ import Layout from '../../layouts/Layout.astro';
 import { getCollection, render } from 'astro:content';
 
 export async function getStaticPaths() {
-  const entries = await getCollection('gallery');
+  const now = Date.now();
+  const entries = (await getCollection('gallery')).filter(
+    (e) => !e.data.publishAt || e.data.publishAt.getTime() <= now
+  );
   return entries.map((entry) => ({
     params: { id: entry.id },
     props: { entry },
@@ -16,9 +19,10 @@ const { title, pipeline, date, mediaType, src, poster, description, params, tags
 const base = import.meta.env.BASE_URL;
 
 // Prev/next navigation in the same date-desc order as the gallery grid.
-const all = (await getCollection('gallery')).sort(
-  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
-);
+const now = Date.now();
+const all = (await getCollection('gallery'))
+  .filter((e) => !e.data.publishAt || e.data.publishAt.getTime() <= now)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 const idx = all.findIndex((e) => e.id === entry.id);
 const prev = idx > 0 ? all[idx - 1] : null;
 const next = idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;

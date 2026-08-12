@@ -223,6 +223,61 @@ export function loadDotEnvLocal(root) {
   }
 }
 
+// Ask an OpenAI-compatible chat API (DeepSeek by default) for a short title
+// from a prompt. Fails safe: returns null on any error so callers fall back
+// to a filename-derived title.
+// Env: LLM_API_KEY (required), LLM_BASE_URL (default https://api.deepseek.com),
+//      LLM_MODEL (default deepseek-chat).
+export async function llmTitleFromPrompt(prompt) {
+  const apiKey = process.env.LLM_API_KEY;
+  if (!apiKey) return null;
+  const base = (process.env.LLM_BASE_URL || 'https://api.deepseek.com').replace(/\/+$/, '');
+  const model = process.env.LLM_MODEL || 'deepseek-chat';
+  try {
+    const res = await fetch(`${base}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You generate short evocative titles (2-4 words) for AI-generated art. Reply with only the title, no quotes, no extra punctuation.',
+          },
+          { role: 'user', content: String(prompt).slice(0, 800) },
+        ],
+        max_tokens: 16,
+        temperature: 0.8,
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const t = data?.choices?.[0]?.message?.content?.trim();
+    return t || null;
+  } catch {
+    return null;
+  }
+}
+
+// Create a ~500px-wide JPEG thumbnail from an image via ffmpeg (CPU only).
+// Returns true on success.
+export function makeThumb(srcPath, thumbPath, size = 500) {
+  try {
+    const res = spawnSync(
+      'ffmpeg',
+      ['-y', '-i', srcPath, '-vf', `scale=${size}:-2`, '-q:v', '4', thumbPath],
+      { stdio: 'pipe' }
+    );
+    return res.status === 0 && fs.existsSync(thumbPath);
+  } catch {
+    return false;
+  }
+}
+
 // ---- release --------------------------------------------------------------
 
 /**
