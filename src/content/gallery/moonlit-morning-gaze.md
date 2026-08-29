@@ -16,5 +16,6 @@ params:
   version: "ComfyUI"
 publishAt: "2026-08-29T12:00:00Z"
 tags: []
+published: true
 ---
 
